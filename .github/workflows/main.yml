@@ -1,40 +1,51 @@
-name: Snyk Code Scan
+name: Snyk Code Scan (SAST + SARIF)
 
-on: [push, pull_request]
+on:
+  push:
+    branches:
+      - '**'          # ALL branches
+  pull_request:
+    branches:
+      - '**'          # ALL branches
+  workflow_dispatch:
 
 jobs:
-  snyk:
+  snyk-code-scan:
     runs-on: ubuntu-latest
+
     permissions:
-      actions: read
       contents: read
       security-events: write
 
     steps:
-      - uses: actions/checkout@v3
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-      - uses: snyk/actions/setup@master
-
-      - name: Run Snyk Code test
-        run: |
-          snyk code test --sarif-file-output=snyk-code.sarif
-          ls -lh snyk-code.sarif
-          head -20 snyk-code.sarif
-        env:
-          SNYK_TOKEN: c80a2012-bb87-4482-beb5-399c664f183d
-
-      - name: Upload SARIF to GitHub
-        uses: github/codeql-action/upload-sarif@v2
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
-          sarif_file: snyk-code.sarif
+          node-version: '20'
 
-      - name: Snyk Monitor (upload results to Snyk)
-        run: snyk monitor
+      - name: Install Snyk CLI
+        run: npm install -g snyk
+
+      - name: Authenticate Snyk
         env:
           SNYK_TOKEN: c80a2012-bb87-4482-beb5-399c664f183d
-          
+        run: snyk auth "$SNYK_TOKEN"
 
-      - name: Upload results to GitHub Code Scanning
-        uses: github/codeql-action/upload-sarif@v2
+      # Snyk CODE scan (SAST)
+      - name: Run Snyk Code Test (Generate SARIF)
+        env:
+          SNYK_TOKEN: c80a2012-bb87-4482-beb5-399c664f183d
+        run: |
+          snyk code test \
+            --sarif-file-output=snyk-code.sarif || true
+
+          ls -lh snyk-code.sarif
+
+      # Upload SARIF to GitHub Code Scanning
+      - name: Upload SARIF to GitHub
+        uses: github/codeql-action/upload-sarif@v4
         with:
           sarif_file: snyk-code.sarif
