@@ -3,10 +3,10 @@ name: Snyk Code Scan (SAST + SARIF)
 on:
   push:
     branches:
-      - '**'  # all branches
+      - '**'          # Run on all branches
   pull_request:
     branches:
-      - '**'  # all branches
+      - '**'          # Run on all PRs
   workflow_dispatch:
 
 jobs:
@@ -18,11 +18,11 @@ jobs:
       security-events: write
 
     steps:
-      # Checkout the repo
+      # Checkout code
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # Setup Node.js (required for Snyk CLI)
+      # Setup Node.js
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
@@ -32,22 +32,24 @@ jobs:
       - name: Install Snyk CLI
         run: npm install -g snyk
 
-      # Authenticate Snyk using secret token
+      # Authenticate Snyk
       - name: Authenticate Snyk
         env:
           SNYK_TOKEN: c80a2012-bb87-4482-beb5-399c664f183d
         run: snyk auth "$SNYK_TOKEN"
 
-      # Run Snyk Code scan and generate SARIF
+      # Run Snyk Code Test
       - name: Run Snyk Code Test (Generate SARIF)
         env:
           SNYK_TOKEN: c80a2012-bb87-4482-beb5-399c664f183d
         run: |
           snyk code test \
+            --all-projects \
             --sarif-file-output=snyk-code.sarif \
-            --severity-threshold=low || true
-          
-          # Verify SARIF exists
+            --severity-threshold=low \
+            --json || true
+
+          # Confirm SARIF exists
           ls -lh snyk-code.sarif
 
       # Upload SARIF to GitHub Code Scanning
