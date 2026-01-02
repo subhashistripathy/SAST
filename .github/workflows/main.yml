@@ -1,4 +1,4 @@
-name: Snyk Code Scan (SAST + SARIF)
+name: Code Scan 
 
 on:
   push:
